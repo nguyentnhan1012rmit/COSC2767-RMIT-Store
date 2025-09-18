@@ -226,7 +226,7 @@ pipeline {
       steps {
         script {
           try {
-            timeout(time: 2, unit: 'MINUTES') {
+            timeout(time: 10, unit: 'MINUTES') {
               sh '''
                 set -euo pipefail
                 docker pull mcr.microsoft.com/playwright:v1.55.0-jammy
