@@ -1,15 +1,3 @@
-#############################################
-# RMIT University Vietnam
-# Course: COSC2767|COSC2805 Systems Deployment and Operations
-# Semester: 2025B
-# Assessment: Assignment 2
-# Author: Bui Viet Anh
-# ID: s3988393
-# Created  date: 14/09/2025
-# Last modified: 18/09/2025
-# Acknowledgement: None
-#############################################
-
 # Shared variables (override via Jenkins environment or --extra-vars as needed)
 aws_region: "{{ lookup('env','REGION') | default('us-east-1', true) }}"
 eks_cluster: "{{ lookup('env','EKS_CLUSTER') | default('rmit-eks', true) }}"

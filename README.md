@@ -1,651 +1,435 @@
-<p align="center">
-    <img src="https://i.imgur.com/Om7ww0e.png" width=900>
-</p>
+/*
+RMIT University Vietnam
+Course: COSC2767|COSC2805 Systems Deployment and Operations
+Semester: 2025B
+Assessment: Assignment 2
+Author: Bui Viet Anh
+ID: s3988393
+Created  date: 14/09/2025
+Last modified: 18/09/2025
+Acknowledgement: None
+*/
 
-# RMIT Store 🛒
+# RMIT Store - AWS CI/CD Pipeline Setup Guide
 
-The RMIT Store is dedicated to selling glorious and wholesome RMIT merchandise, including lanyards, hoodies, T-shirts, cups, and more. It aims to enrich the student experience within the university community by offering a diverse range of services.
+This repository# Store GitHub Personal Access Token (secure input)contains the infrastructure and configuration files for deploying the RMIT Store application using AWS services with a complete CI/CD pipeline.
 
-Our primary focus is on providing official university apparel and merchandise that fosters a strong sense of identity, inclusivity, and connection among students.
+**Group Member:**
+   - Bui Viet Anh - s3988393
+   - Le Trung Hau - s3741297
+   - Nguyen Tien Dung - s3999561
+   - Nguyen Tan Thang - s3986344
+   - Nguyen Thanh Nhan - S4073629
 
----
+**Github Classroom Repo Link:** https://github.com/RMIT-Vietnam-Teaching/cosc2767-assignment-2-2025b-sg-group-4-1
 
-## 🔬 What is the MERN Stack?
+## Overview
 
-The MERN stack is a collection of JavaScript-based technologies used to build modern web applications. It consists of:
+The setup includes:
 
-- **MongoDB**: A NoSQL database for storing application data.
-- **Express.js**: A back-end web application framework for Node.js.
-- **React**: A front-end library for building dynamic and interactive user interfaces.
-- **Node.js**: A runtime environment that executes JavaScript code on the server.
+- **EKS Cluster** for Kubernetes orchestration
+- **MongoDB** for database services
+- **Jenkins** for CI/CD automation
+- **CloudWatch** for monitoring and logging
+- **Ansible** for infrastructure configuration
+- **Docker** for containerization
 
-In this project, additional tools and libraries include:
+## Prerequisites
 
-- **Mongoose**: For object modeling with MongoDB.
-- **Redux**: For managing the application state.
+- Basic knowledge of AWS services (EC2, CloudFormation, EKS, ...)
+- Gmail account for email notifications (or equivalent SMTP service)
 
-## 🏪 Features
+## Project Structure Integration
 
-### For Members (Including Admins):
+⚠️ **Important**: This repository contains CI/CD configuration files that should be integrated into your main application repository which is the one that you fork from teacher.
 
-- **Account Management**:
-  - Create a new account or log in securely using email and password.
-  - Change account details such as first name, last name, phone, password, and address.
+### File Integration Guide (This is just example, you need to do for all of the rest like server/, k8s/, ...):
 
-- **Shopping Features**:
-  - Browsing different products.
-  - Filter products by price and name.
-  - Make orders by purchasing products.
-  - Check order history.
-  - Leave product reviews.
-  - Manage wishlist items.
+- Copy the `ansible/` folder to your application's root directory
+- For the client application:
+  - Copy `docker-entrypoint.sh` and `Dockerfile` to your existing `client/` folder
+  - Review `package.json` for additional dependencies and install as needed. For example the "@playwright/test" dependency in root package.json is one of them that need to be installed.
+- Review and adapt other configuration files as necessary
 
-### For Admins:
+IMPORTANT: You should copy all files in this repository except the `package*.json` and `README.md` files to the forked repository
 
-- **Store Management**:
-  - Change, edit, and create products, categories, and brands.
-  - Manage user accounts (including members and other admins).
-  - Moderate and manage product reviews.
+## Setup Instructions
 
-## 🕧 Prerequisites
+### Step 1: Configure Email Notifications
 
-- **Node.js**: Version 22 or later.
-- **MongoDB**: Installed and running locally (for example, MongoDB Community Server) or on cloud (for example, MongoDB Atlas).
-
-## Overview MERN Stack Architecture
-
-Below is an overview of how the components in this architecture are connected:
-
-### Architecture Overview
-
-```mermaid
-graph TD
-    Browser["🧑‍💻 Browser (Frontend User)"] <-->|Access via port 8080| Client["💻 Client (Frontend)"]
-    Client <-->|Connect via port 3000| Server["🛠️ Server (Backend)"]
-    Server <-->|Connect via port 27017| Database["🗄️ MongoDB Database"]
-```
-
-### Component Connections
-
-1. **Browser**: The user interacts with the frontend of the application (website) via port `8080`.
-2. **Frontend (Client)**: Built with **React.js**, the client handles the user interface and connects to the backend server via port `3000`.
-3. **Backend (Server)**: Developed using **Node.js** and **Express.js**, the server processes requests from the client and connects to the database.
-4. **Database**: The **MongoDB** database stores and retrieves data for the application, communicating with the server via port `27017`.
-
-This clear separation of concerns ensures scalability, flexibility, and modularity in the application.
-
-> **Note**: These port numbers are critical, especially if you plan to run these components as services in containers on different servers. This modular structure supports scalability and can be adjusted based on CI/CD requirements to streamline deployment. 
-
-## 📂 Project Structure
-
-Here is the quick overview of project structure:
-
-```
-client/                 # Client-side code (React.js application).
-  ├── .env              # Environment variables for the client.
-  ├── .env.example      # Example environment variables (backup).
-  ├── app/              # Main application code.
-  ├── public/           # Public assets.
-  │   ├── images/       # Publicly accessible images.
-  │   └── index.html    # Entry HTML file for the client.
-  ├── webpack/          # Webpack configuration files.
-  │   └── webpack.dev.js # Development-specific Webpack configuration.
-  └── package.json      # Client dependencies and scripts.
-
-server/                 # Server-side code (Node.js application).
-  ├── .env              # Environment variables for the server.
-  ├── .env.example      # Example environment variables (backup).
-  ├── config/           # Configuration files (e.g., database, server settings).
-  ├── middleware/       # Custom Express middleware.
-  ├── models/           # Mongoose schemas and models.
-  ├── routes/           # Express route handlers.
-  ├── utils/            # Utility functions (e.g., helpers).
-  ├── index.js          # Server entry point.
-  ├── nodemon.json      # Nodemon configuration file.
-  └── package.json      # Server dependencies and scripts.
-
-package.json            # Root-level project dependencies and scripts.
-.gitignore               # Specifies files and directories to be ignored by Git.
-README.md               # Documentation and setup instructions.
-```
-
----
-
-## 📚 Recommended Ways for Beginners to Deploy the Website (From Easy to Hard)
-
-### Plan A: Deploy Locally
-
-**🪟 Window, 🍏 MacOS, or 🐧 Linux**:
-   - Follow the instructions in the below "Plan A: Steps to Build, Configure, and Run the Project Locally" section.
-
-### Plan B: Deploy on AWS EC2 (Single Instance)
-
-1. Follow the instructions in the below "Plan B: Configuring and Deploying the Project on AWS EC2" section to deploy both the client and server on a single EC2 instance.
-
-### Plan C: Deploy on AWS EC2 (Separate Instances)
-
-1. Deploy the client and server on two different EC2 instances.
-2. Ensure that the client instance can communicate with the server instance by updating the `API_URL` in the client's `.env` file to point to the server instance's public IP.
-3. Configure the EC2 Security Groups to allow the required ports to enable the communication between client and server on different EC2 servers.
-
-Note: you can consider to further seperate the server into the backend and the mongodb into seperate services on different servers. This improves modularity and scalability, making the system easier to manage and expand.
-
-### Plan D: Containerize with Docker
-
-1. Create Dockerfiles for both the client and server.
-2. Build Docker images for the client and server.
-3. Run the client and server in separate Docker containers in different ec2 servers.
-
-### Plan E: Use Docker Compose
-
-1. Create a `docker-compose.yml` file to define multi-container services.
-2. Use Docker Compose to orchestrate the client and server containers.
-3. This approach is standard in CI/CD pipelines and team-based development environments.
-
-### Plan F: Upgrade to CI/CD Pipeline
-
-Here are some examples to enhance the CI/CD pipeline of the application:
-
-1. CI/CD Automation: Use tools like Jenkins to automate build, test, and deployment processes.
-2. Configuration Management: Utilize Ansible to efficiently manage server configurations.
-3. Infrastructure as Code (IaC): Leverage AWS CloudFormation to define and provision cloud infrastructure through code. Automate the setup of AWS resources, including EC2 instances, databases, and S3 buckets, and so on.
-4. Container Orchestration: Use Kubernetes or Docker Swarm to deploy and scale containers.
-5. Monitoring: Implement Prometheus and Grafana for performance monitoring and alerts.
-6. Load Balancing: Incorporate AWS Elastic Load Balancer (ELB) if deploying on AWS.
-7. Zero Downtime Deployment: Use Blue-Green Deployment or Canary Deployment strategies for seamless updates without service interruption.
-8. Testing Enhancements: Incorporate automated unit, integration, and end-to-end (Web UI) tests into the CI/CD pipeline to ensure comprehensive coverage and robust quality across all application layers.
-
-These ideas can further improve reliability, scalability, and operational efficiency for the project.
-
-**Below are the step-by-step guides for Plan A and Plan B to help you get started. 😊**
-
----
-
-
-## 🔧 Plan A: Steps to Build, Configure, and Run the Project Locally
-
-### Step 0: Install and Verify Node.js and MongoDB
-
-Install Node.js and MongoDB on your local computer. For detailed instructions:
-
-- **For 🪟 Windows, 🍏 MacOS, and 🐧 Linux**:
-  - To install Node.js, follow the instructions at [https://nodejs.org/en/download](https://nodejs.org/en/download).
-  - To install MongoDB, follow the instructions at [https://www.mongodb.com/docs/manual/installation/](https://www.mongodb.com/docs/manual/installation/).
-
-  Please make sure to select the appropriate instructions for your specific operating system.
-
-After installation, verify that Node.js and MongoDB are installed correctly by running the following commands in your terminal:
+Before proceeding, update the email configuration in `ansible/roles/jenkins_host/templates/jenkins_override.conf.j2`:
 
 ```bash
-# Verify Node.js installation
-node -v
+# Replace with your email address
+Environment="JENKINS_ADMIN_EMAIL=Jenkins CI <your-email@gmail.com>" 
+Environment="DEFAULT_RECIPIENTS=your-notification-email@gmail.com"
 
-# Verify npm installation
-npm -v
-
-# Verify MongoDB installation
-mongod --version
+# Replace with your github name
+Environment="GITHUB_USER=Im-Viet" # Not "Im-Viet" but your github name
 ```
 
-Here are some commands you can run to check if MongoDB is currently running after installing it, depending on your operating system:
+### Step 2: Create AWS Key Pair
 
-🔹 **🪟 Windows**
+1. Navigate to **EC2 Console** → **Key Pairs**
+2. Click **Create Key Pair**
+3. Name it `key`
+4. Download the `key.pem` file and store it securely
 
-Open Command Prompt (cmd) or PowerShell and run:
-```bash
-sc query MongoDB
-```
+Note: Please do not use an existing key pair that you may have already created. This is because the pipeline relies on the fact that the key is named `key.pem`. Key pairs have to be created manually in the EC2 dashboard, only those created through that does AWS register that keypair. Therefore, you cannot just rename the existing key that you have locally as this is not registered on AWS
 
-If MongoDB is running as a service, you’ll see `STATE: RUNNING`.
-If it’s not running, you’ll see `STOPPED`.
+### Step 3: Configure AWS Parameters
 
-Alternatively, you can check processes:
-```bash
-tasklist /FI "IMAGENAME eq mongod.exe"
-```
+**Prerequisites for this step:**
 
-If you see `mongod.exe`, MongoDB is running.
+- GitHub Personal Access Token (PAT) - [Create one here](https://github.com/settings/tokens)
+- Gmail App Password - [Setup guide](https://support.google.com/accounts/answer/185833)
 
-🔹 **🍏 macOS**
-
-Open Terminal and run:
-```bash
-brew services list | grep mongodb
-```
-
-If you installed via Homebrew, you’ll see `started mongodb-community@<version>`.
-
-If not using Homebrew, you can check with:
-```bash
-ps aux | grep mongod
-```
-
-If you see a `mongod` process (not just the grep one), MongoDB is running.
-
-🔹 **🐧 Linux (Ubuntu / Debian / CentOS / etc.)**
-
-Run:
-```bash
-systemctl status mongod
-```
-
-If MongoDB is running, you’ll see `Active: active (running)`.
-
-For systems without `systemd`, you can also try:
-```bash
-service mongod status
-```
-
-Or check processes:
-```bash
-ps aux | grep mongod
-```
-
-✅ **Universal check on all OS**
-
-If you want a quick test across platforms, just try connecting with the MongoDB shell:
-```bash
-mongosh
-```
-
-If it connects successfully, MongoDB is running.
-
-### Step 1: Install Dependencies
-
-At the root of the project, install all dependencies:
+Open **AWS CloudShell**, create a new .sh file and paste in the following script
 
 ```bash
-npm install
+# Set AWS region
+export AWS_DEFAULT_REGION=us-east-1
+REGION=us-east-1
+
+# safer input (won’t echo on screen)
+printf "GitHub PAT: " ; read -s GH_PAT ; echo
+aws ssm put-parameter --name /ci/github/pat --type SecureString --value "$GH_PAT" --overwrite
+unset GH_PAT
+
+# Store SMTP credentials
+read -p "SMTP user (e.g. you@gmail.com): " SMTP_USER
+aws ssm put-parameter --name /ci/smtp/user --type String --value "$SMTP_USER" --overwrite
+unset SMTP_USER
+
+printf "SMTP app password: " ; read -s SMTP_PASS ; echo
+aws ssm put-parameter --name /ci/smtp/pass --type SecureString --value "$SMTP_PASS" --overwrite
+unset SMTP_PASS
+
+# Upload key.pem file (upload the file to CloudShell first, if you don't know how to upload then Google it!)
+aws ssm put-parameter \
+  --name /ci/keys/mongo_pem \
+  --type SecureString \
+  --value "file://$PWD/key.pem" \
+  --overwrite \
+  --region "$REGION"
+
+# Verify parameters are stored correctly
+aws ssm get-parameter --name /ci/smtp/user --query 'Parameter.Value' --output text
+aws ssm get-parameter --with-decryption --name /ci/github/pat --query 'Parameter.Value' --output text
+aws ssm get-parameter --with-decryption --name /ci/smtp/pass --query 'Parameter.Value' --output text
+aws ssm get-parameter \
+  --with-decryption \
+  --name /ci/keys/mongo_pem \
+  --query Parameter.Value \
+  --output text \
+  --region "$REGION" | sed -n '1,5p'
 ```
 
-Running `npm install` at the root of the project will install dependencies for both the client and server. Specifically, by running that command, it will automatically:
+The PAT is prompted at runtime. So you do not need to edit the bash script above. You should also prepare an app password in Gmail (which wil allow an application to act as a email client), which will be prompted.
 
-1. Navigate to the `client` directory and install dependencies listed in `package.json`.
-2. Navigate to the `server` directory and install dependencies listed in `package.json`.
+Make sure to change the permission of the bash script file and then execute that script.
 
-Alternatively, for experimentation, you can choose to install dependencies separately for each folder by running `npm install` in the `client` and `server` directories individually. However, for convenience, we recommend running `npm install` at the root to handle both in one go.
+> **Note**: To upload `key.pem` to CloudShell, use the upload feature in the CloudShell interface or drag and drop the file.
 
-### Step 2: Populate the Database
+### Step 4: Deploy CloudFormation Stacks
 
-Get started quickly with pre-populated data:
+Deploy the infrastructure components in the following order:
 
-- **Admin User**: Creates an admin user with the provided email and password.
-- **Categories**: Seeds categories with random names and descriptions.
-- **Brands**: Seeds brands with random names and descriptions.
-- **Products**: Seeds products with random details such as SKU, name, description, quantity, price, and image URL. Products are associated with categories and brands.
+1. **EKS Stack** (15-20 minutes)
+2. **MongoDB Stack** (1-2 minutes)
+3. **Jenkins Stack** (1-2 minutes)
+4. **CloudWatch Stack** (1-2 minutes)
 
-If you want to seed the MongoDB database with initial data, run the following command. Replace `admin@rmit.edu.vn` and `mypassword` with your desired admin credentials:
+#### General Stack Creation Process:
+
+1. Navigate to **CloudFormation Console**
+2. Click **Create Stack** → **With new resources**
+3. Choose **Upload a template file**
+4. Select the appropriate template file from `ansible/templates/cfn/` (This is step 1)
+5. ==Select **LabRole** as the IAM role (This is step 3)==
+
+#### Stack-Specific Configuration: (These are step 2)
+
+Note: The specific subnet which you choose for these CloudFormation Stack does not matter and doesn't affect the application as a whole. As long as you avoid subnet 1e
+
+**EKS Stack (`eks-iac.yaml`):**
+
+- Stack Name: `EKS`
+- SubnetIds: Select 2 subnets (avoid subnet 1e - it's restricted)
+
+**MongoDB Stack (`mongodb-iac.yaml`):**
+
+- Stack Name: `MongoDB`
+- Select 1 SubnetId and VPCId (avoid subnet 1e - it's restricted)
+- Key Pair: `key`
+
+**Jenkins Stack (`jenkins-iac.yaml`):**
+
+- Stack Name: `Jenkins`
+- Select 1 SubnetId and VPCId (avoid subnet 1e - it's restricted)
+- Key Pair: `key`
+- Repository URL: Your GitHub repository URL
+- NOTE: It's important that you select an IAM role for this stack
+
+> ⚠️ **Important**: After Jenkins stack creation, wait an additional 10 minutes for the Jenkins server to complete its setup process. The CloudWatch stack is optional here, you can do it later!
+
+**CloudWatch Stack (`cloudwatch-iac.yaml`):**
+
+- Stack Name: `CloudWatch`
+- LoadBalancerName: you should go to the EC2 console and choose section load balancer and copy the name of it to the field.
+- AlarmEmail: choose one to recieve notifications.
+- InstanceId1: choose the jenkins instance.
+- InstanceId2 & 3: fill in it if you want which is optional.
+
+> **Note**: There should only one and just one load balancer appear in the ec2 console which is the one you need to copy the name.
+
+> ⚠️ **Important**: The loadbalancer name only appears after you run the pipeline job at least one because it is installed during the pipeline, so make sure that you create CloudWatch stack after you have done with the pipeline job.
+
+### Step 5: Configure Jenkins
+
+1. **Access Jenkins**:
+
+   - Navigate to the Jenkins URL from the EC2 using the public IP with port 8080
+   - Login credentials:
+     - Username: `admin`
+     - Password: `admin`
+   - Skip plugin installation when prompted
+   - Click **Start using Jenkins**
+
+2. **Create Pipeline Job**:
+
+   - Click **New Item**
+   - Job Name: `rmit-store`
+   - Type: **Multibranch Pipeline**
+   - Click **OK**
+
+3. **Configure Source**:
+
+   - In the configuration page, click **Add source** → **GitHub**
+   - Select **GitHub PAT** as the credential type
+   - Paste your repository URL
+   - Click **Apply** and **Save**
+
+4. **Execute Pipeline**:
+
+   - Navigate to your `rmit-store` job
+   - Trigger a build to verify the deployment pipeline
+
+5. **Setup GitHub Webhook**: (This is in course material, you would want to refer to the lecture material or Google it)
+   - Configure webhook in your GitHub repository settings
+   - Point to your Jenkins instance for automatic builds on code changes
+
+### Common Issues:
+
+- **Stack Creation Fails**: Verify IAM permissions and resource limits
+- **Jenkins Not Accessible**: Check security groups and wait for full initialization
+- **Pipeline Fails**: Verify GitHub credentials and repository access
+- **Email Notifications Not Working**: Double-check SMTP credentials and app password
+
+### Verification Steps:
+
+1. Confirm all CloudFormation stacks are in `CREATE_COMPLETE` status
+2. Verify Jenkins is accessible and configured properly
+3. Test pipeline execution with a sample commit
+4. Check application deployment in EKS cluster
+
+## Additional Resources
+
+- [AWS EKS Documentation](https://docs.aws.amazon.com/eks/)
+- [Jenkins Pipeline Documentation](https://www.jenkins.io/doc/book/pipeline/)
+- [GitHub Webhook Setup](https://docs.github.com/en/developers/webhooks-and-events/webhooks)
+
+## Support
+
+For technical issues or questions about this setup, please refer to your course materials.
+
+## Diagram
+
+### CI/CD Pipeline Flow – RMIT Store
 
 ```bash
-npm --prefix ./server run seed:db admin@rmit.edu.vn mypassword
+                                         Developer (GitHub)
+                                                  |
+                                                  | (push / PR)
+                                                  v
+                                        +-------------------+
+                                        |   GitHub Webhook  |
+                                        +-------------------+
+                                                  |
+                                                  v
+                                        +--------------------+        credentials        +----------------+
+                                        | Jenkins Controller |-------------------------->|   AWS / IAM    |
+                                        +--------------------+                           +----------------+
+                                                  |
+                                                  | pipeline
+                                                  v
+        +-------------------------------------------------------------------------------------------+
+        | Jenkins Stages                                                                            |
+        |-------------------------------------------------------------------------------------------|
+        | 1) Resolve IDs & Login to ECR -> 2) Ansible: Setup -> 3) Ensure ECR repositories          |
+        |                                                                                           |
+        | 4) Backend: Unit + Integration tests                                                      |
+        |                                                                                           |
+        | 5) Build & Push Images --(docker push)--> Amazon ECR                                      |
+        |                                                                                           |
+        | 6) Configure kubectl (EKS context)                                                        |
+        |                                                                                           |
+        | 7) Config (Ansible DEV) -> 8) Apply k8s manifests (DEV, first time only) -> 9) Deploy DEV |
+        |                                                                                           |
+        | 10) Discover Ingress & URLs -> 11) Apply Dev Ingress (base) -> 12) Seed database          |
+        |                                                                                           |
+        | 13) Dev UI E2E (Playwright)                                                               |
+        |                                                                                           |
+        | 14) Config (Ansible PROD) -> 15) Deploy to PROD (Blue/Green) -> 16) Apply Canary Ingress  |
+        | → Gradual Traffic Shift (e.g., 10% → 50% → 100%)                                          |
+        | → Promote new version OR Roll back (rollout undo)                                         |
+        +-------------------------------------------------------------------------------------------+
+            |                                                                                   |
+            | post actions                                                                      | post actions
+            v                                                                                   v
+ +--------------------+                                                              +---------------------+
+ | Notifications      |<--------- emailext: success/failure, links, logs ------------| Artifact Archiving  |
+ | (Email recipients) |                                                              | (Dockerfiles, k8s)  |
+ +--------------------+                                                              +---------------------+
 ```
 
-<p align="center">
-    <img src="setup_screenshots/successful_seed_terminal.png" width=900>
-</p>
-
-> **Disclaimer:** The product data (including names, descriptions, and images) is generated using the [`@faker-js/faker`](https://fakerjs.dev/) library for demonstration purposes only. It does not represent real products from the actual RMIT Store.
-
-[Optional] You can use MongoDB Compass to explore the database data by connecting to it using the MongoDB URI. When connecting to a local MongoDB database, the default URI is `mongodb://localhost:27017`.
-
-<p align="center">
-    <img src="setup_screenshots/mongodb_compass_connect_localhost_database.png" width=900>
-</p>
-
-<p align="center">
-    <img src="setup_screenshots/mongodb_compass_browsing_data.png" width=900>
-</p>
-
-
-
-### Step 3: Run the Project
-
-To start the project, at the root of the project, use the following command:
+### Flow of Artifacts & Traffic
 
 ```bash
-npm run dev
+Source code (GitHub) ──► Jenkins
+   └─> Docker images built ──► ECR repositories
+         └─> K8s Deployments (DEV) pull images from ECR
+               └─> Ingress (DEV) exposes app ► E2E tests ► OK? ► proceed
+                     └─> (PROD) Blue/Green Deployments pull from ECR
+                           └─> Canary Ingress splits traffic (old vs new)
+                                 └─> Promote to 100% or Roll back
+
+Notifications: Jenkins emailext on failure/success with build links.
+Artifacts: Jenkins archives key files (Dockerfiles, k8s YAMLs) for traceability.
 ```
 
-Running `npm run dev` at the root of the project will start for both the client (frontend) and server (backend). Specifically, by running that command, it will automatically:
+- **Stage Breakdown (compact)**:
+  - SCM & Prep: Resolve AWS IDs/regions, ECR login; Ansible bootstrap; ensure ECR repos.
+  - Quality Gate: Backend unit + integration tests.
+  - Build & Publish: Build Docker images; push to Amazon ECR.
+  - Cluster Context: Configure kubectl to target EKS.
+  - DEV Deploy: Apply base manifests (first time), deploy to DEV, discover ingress, seed database, run Playwright E2E.
+  - PROD Deploy: Apply PROD config; perform Blue/Green rollout; attach Canary Ingress for gradual traffic shifting; promote or rollback.
+  - **Post**: Email notifications (emailext) and artifact archiving.
 
-1. Navigate to the `client` directory and run the command `npm run dev` to start the client.
-2. Navigate to the `server` directory and run the command `npm run dev` to start the server.
+### Runtime Architecture - RMIT Store
 
-Alternatively, you can choose to run each of them separately. However, for convenience, we recommend running `npm run dev` at the root to run both in one go.
-
-The website should now be accessible at:
-
-```
-http://0.0.0.0:8080 or http://localhost:8080 
-```
-<p align="center">
-    <img src="setup_screenshots/website_hompage.png" width=900>
-</p>
-
-After deploying the website, you can create your own account for a normal member to start browsing and buy products, leave reviews, or log in as an admin where you can have more administration rights.
-
-## 🕧 Summary of Commands
-
-Here is a quick reference for the commands to build and populate the project:
+- **On EKS**
 
 ```bash
-# Install dependencies
-npm install
-
-# Populate the database
-npm --prefix ./server run seed:db admin@rmit.edu.vn mypassword
-
-# Run the project
-npm run dev
+                                     +------------------------------+
+      Internet / Users  ── DNS ──►   |  [ Public IP / Classic LB ]  |
+                                     |   (svc/ingress-nginx LB)     |
+                                     +------------------------------+
+                                                     |
+                                       +-------------v--------------+
+                                       |  NGINX Ingress Controller  |  (ingress-nginx)
+                                       +----------+-----------------+
+                                                     |
+                                   +-----------------+-------------------+
+                                   |                                     |
+                             (namespace: dev)                   (namespace: prod)
+                      +-----------------------------+     +-----------------------------+
+                      |   Ingress (dev base rules)  |     |   Ingress (prod + canary)   |
+                      +--------------+--------------+     +--------------+--------------+
+                                     |                                   |
+                                     v                                   v
+                              +--------------+                   +--------------+
+                              | frontend-svc |                   | frontend-svc |
+                              +------+-------+                   +------+-------+
+                                     |                                  |        \ (traffic split by selector)
+                                     v                                  v         v
+                       +-------------------------+         +------------------+  +------------------+
+                       |  Deployment: frontend   |         |  Deploy: front-  |  | Deploy: front-   |
+                       |  (dev pods)             |         |  end-blue (pods) |  | end-green (pods) |
+                       +-------------+-----------+         +---------+--------+  +---------+--------+
+                                     |                           90% |          / 10%
+                                     v                               v         v
+                              +--------------+                +----------------+
+                              |  backend-svc |                |  backend-svc   |
+                              +------+-------+                +------+---------+
+                                     |                               |          \ (traffic split by selector)
+                                     v                               v           v
+                       +----------------------+            +------------------+  +------------------+
+                       |  Deployment: backend |            |  Deploy: back-   |  |  Deploy: back-   |
+                       |  (dev pods)          |            |  end-blue (pods) |  |  end-green (pods)|
+                       +------------+---------+            +---------+--------+  +---------+--------+
+                                    |                                |                      |
+                                    ─────────────────────────────────────────────────────────
+                                                            |
+                                                            v
+                                                   +--------------------+
+                                                   | MongoDB (stateful) |
+                                                   |     share PV       |
+                                                   +--------------------+
 ```
 
-## 🚀 Plan B: Configuring and Deploying the Project on AWS EC2
-
-### Step 1: Launch an EC2 Instance
-
-1. Log in to the AWS Management Console.
-2. Launch a new EC2 instance with the following specifications:
-   - Choose the **Amazon Linux 2023 AMI**.
-   - Select an instance type (e.g., t3.micro for free-tier eligibility). You might consider temporarily upgrading to a more powerful tier, such as t3.medium or t3.small, if the free-tier instance is too slow to build the project initially. The build process on a free-tier instance should take less than 2 minutes.
-   - Configure security groups to allow inbound traffic on ports **3000** (backend) and **8080** (frontend).
-
-### Step 2: Install Node.js and npm
-
-For more detailed instructions, you can refer to the official Node.js documentation at [https://nodejs.org/en/download](https://nodejs.org/en/download). On that page, select the instructions to install Node.js v22.x.x (LTS) for Linux using a node version manager (fnm).
-
-1. Connect to your EC2 instance via SSH.
-2. Install Node.js and npm:
-   ```bash
-   # Install fnm
-   curl -fsSL https://fnm.vercel.app/install | bash
-
-   # Activate fnm
-   source ~/.bashrc
-
-   # Install and use Node.js version 22
-   fnm use --install-if-missing 22
-
-   # Verify Node.js installation
-   node -v
-
-   # Verify npm installation
-   npm -v
-   ```
-
-### Step 3: Install MongoDB
-
-For more detailed instructions, you can refer to the official MongoDB documentation on [installing MongoDB on Amazon Linux](https://www.mongodb.com/docs/manual/tutorial/install-mongodb-on-amazon/).
-
-1.  **Configure the repository.**
-
-    Create a `/etc/yum.repos.d/mongodb-org-8.0.repo` file so that you can install MongoDB directly using `yum`:
-
-    ```bash
-    [mongodb-org-8.0]
-    name=MongoDB Repository
-    baseurl=https://repo.mongodb.org/yum/amazon/2023/mongodb-org/8.0/x86_64/
-    gpgcheck=1
-    enabled=1
-    gpgkey=https://pgp.mongodb.com/server-8.0.asc
-    ```
-
-2.  **Install MongoDB Community Server.**
-
-    To install the latest stable version of MongoDB, run the following command:
-
-    ```bash
-    sudo yum install -y mongodb-org
-    ```
-
-3.  **Start MongoDB.**
-
-    You can start the `mongod` process by issuing the following command:
-
-    ```bash
-    sudo systemctl start mongod
-    ```
-
-    If you receive an error similar to the following when starting `mongod`:
-    `Failed to start mongod.service: Unit mongod.service not found.`
-
-    Run the following command first:
-
-    ```bash
-    sudo systemctl daemon-reload
-    ```
-
-    Then run the start command above again.
-
-4.  **Verify that MongoDB has started successfully.**
-
-    You can verify that the `mongod` process has started successfully by issuing the following command:
-
-    ```bash
-    sudo systemctl status mongod
-    ```
-
-    You can optionally ensure that MongoDB will start following a system reboot by issuing the following command:
-
-    ```bash
-    sudo systemctl enable mongod
-    ```
-
-### Step 4: Clone the Project and Set It Up
-
-1. Clone your project repository:
-   ```bash
-   git clone <your-git-repo-url>
-   cd COSC2767-RMIT-Store
-   ```
-2. Install project dependencies:
-   ```bash
-   npm install
-   ```
-   For the free-tier EC2 instance like t3.micro (2 vGPU & 1 GB Memory), it should take less than 2 minutes to build. If the build process (npm install) is slow for you, consider temporarily upgrading to a higher-tier EC2 instance t3.medium (e.g., 2 vCPU and 4 GB RAM) to speed up the initial setup. Once completed, you can downgrade to a free-tier instance to save costs. Personally, I'm happy with the free-tier t3.small (2 vGPU & 2 GB Memory) as the performance is acceptable!
-   
-### Step 5: Configure Environment Variables
-
-1. Update the `.env` file for both the client and server to use the public IP address of your EC2 instance.
-2. Set the `API_URL` in the `.env` file to point to your EC2 instance:
-   ```env
-   API_URL=http://<your-ec2-public-ip>:3000/api
-   ```
-
-This step ensures that the frontend can communicate with the backend hosted on your EC2 instance. By updating the `API_URL` to the public IP of your EC2 instance, the client application will correctly send API requests to the server. 
-
-### Step 6: Populate the Database
-
-If you want to seed the MongoDB database with initial data, run the following command. Replace `admin@rmit.edu.vn` and `mypassword` with your desired admin credentials:
+- **Outside the EKS (image supply & nodes)**
 
 ```bash
-npm --prefix ./server run seed:db admin@rmit.edu.vn mypassword
++-------------------------+             +---------------------------+
+| Amazon ECR              |  images ->  |   K8s Deployments (all)   |
+| (frontend / backend)    |             |   pull images via nodes   |
++-------------------------+             +---------------------------+
+                                                      |
+                                                      v
+                                             +------------------+
+                                             |  EKS Node Group  |
+                                             |  (EC2 worker(s)) |
+                                             +------------------+
 ```
 
-### Step 7: Check Security Group Settings
-
-1. Ensure that the security group associated with your EC2 instance allows inbound traffic on:
-   - Port 3000 (backend)
-   - Port 8080 (frontend)
-2. Verify that the environment variables are correctly configured as per the previous step.
-
-### Step 8: Start the Project
-
-Run the project using the standard command:
+### Blue‑Green + Canary Strategy
 
 ```bash
-npm run dev
+Traffic Progression                             Internet / Users
+Step 1: 90% blue / 10% green                            |
+Step 2: 50% blue / 50% green                            v
+Step 3: 0%  blue / 100% green (promote)   [ Classic LB ] (from svc/ingress-nginx)
+                                                        |
+                                                        v
+                                            +-----------------------+
+                                            |   NGINX Ingress Ctrl  | (ingress-nginx)
+                                            +-----------+-----------+
+                                                        |
+                                                        v
+                                        +------------------------------+
+                                        |      app-ingress-canary      |
+                                        | - routes '/' to frontend-svc | (namespace: prod)
+                                        | - canary rules on host/path  |
+                                        +---------------+--------------+
+                                                        |
+                                                        v
+                                            +-----------------------+
+                                            |     frontend-svc      | (ClusterIP)
+                                            +----------+------------+
+                                                   90% | 10% ◄── initial canary step
+                                                      / \
+                                                     v   v
+                                          +-----------+ +-----------+
+                                          | frontend- | | frontend- |
+                                          | blue (RS) | | green (RS)| (Deployments)
+                                          +-----+-----+ +-----+-----+
+                                                |             |
+                                                v             v
+                                             +------------------+
+                                             |    backend-svc   |   (ClusterIP)
+                                             +---------+--------+
+                                                   90% | 10% ◄── mirrors frontend split
+                                                      / \
+                                                     v   v
+                                          +-----------+ +-----------+
+                                          | backend-  | | backend-  |
+                                          | blue (RS) | | green (RS)| (Deployments)
+                                          +-----+-----+ +-----+-----+
+                                                |             |
+                                                +-----v v----+
+                                                    +------+
+                                                    |  DB  |
+                                                    +------+
 ```
-
-The frontend should now be accessible at `http://<your-ec2-public-ip>:8080`, and the frontend and backend should communicate properly.
-
-### [Optional] Step 9: Configure MongoDB for Remote Connections (e.g., from MongoDB Compass)
-
-If you want to manage your EC2-hosted MongoDB database using a local tool like MongoDB Compass, you need to allow remote connections. By default, MongoDB on EC2 is configured for security to only accept connections from the machine itself.
-
-1.  **Check the Current MongoDB Network Status:**
-
-    Before making changes, check which network interface MongoDB is listening on. Run the following command in your EC2 terminal:
-    ```bash
-    sudo ss -tulpn | grep 27017
-    ```
-    The output will look like this:
-    ```
-    tcp   LISTEN 0      4096                         127.0.0.1:27017      0.0.0.0:*    users:(("mongod",pid=25678,fd=9))
-    ```
-    This output shows that `mongod` is listening only on `127.0.0.1:27017`. This means it will only accept connections originating from within the EC2 instance (`localhost`). Any external connection attempt, like from MongoDB Compass on your laptop, will be refused.
-
-2.  **Edit the MongoDB Configuration File:**
-
-    To allow remote connections, you need to change this setting. Open the `mongod.conf` file:
-    ```bash
-    sudo nano /etc/mongod.conf
-    ```
-
-3.  **Update the `bindIp` Address:**
-
-    Locate the `net` section and change `bindIp` from `127.0.0.1` to `0.0.0.0`.
-
-    *From:*
-    ```yaml
-    net:
-      port: 27017
-      bindIp: 127.0.0.1
-    ```
-
-    *To:*
-    ```yaml
-    net:
-      port: 27017
-      bindIp: 0.0.0.0
-    ```
-
-4.  **Restart MongoDB:**
-
-    Apply the changes by restarting the MongoDB service:
-    ```bash
-    sudo systemctl restart mongod
-    ```
-
-5.  **Verify the New Network Status:**
-
-    Run the check command again:
-    ```bash
-    sudo ss -tulpn | grep 27017
-    ```
-    The output should now show that MongoDB is listening on all network interfaces (`0.0.0.0`):
-    ```
-    tcp   LISTEN 0      4096                           0.0.0.0:27017      0.0.0.0:*    users:(("mongod",pid=29413,fd=9))
-    ```
-    This confirms that MongoDB will now accept connections from external sources.
-
-> **⚠️ Important Security Warning:** Binding MongoDB to `0.0.0.0` makes your database accessible from the entire internet. To protect your data, you **must** restrict access in your EC2 Security Group.
->
-> -   Go to your EC2 instance's Security Group settings.
-> -   Find the inbound rule for port **27017**.
-> -   Change the **Source** from `Anywhere` (`0.0.0.0/0`) to **`My IP`**. This ensures only your computer can connect to the database.
-
-After these steps, you can connect to your database using the connection string: `mongodb://<your-ec2-public-ip>:27017/`.
-
-<p align="center">
-    <img src="setup_screenshots/mongodb_compass_connect_remote_ec2_database.png" width=900>
-</p>
-
----
-
-## 🌱 Setting Up Environment Variables
-
-To configure additional settings, such as port numbers and endpoint addresses, check the environment variables in the client and server directories (client/.env and server/.env).
-
-Below are examples of .env files for hosting both the client and server on the same machine, such as localhost or an AWS EC2 instance.
-
-### Client `.env` File
-
-**Local Example:**
-```
-API_URL=http://localhost:3000/api 
-```
-
-**AWS EC2 Example:**
-```
-API_URL=http://<your-ec2-public-ip>:3000/api
-```
-
-### Server `.env` File
-
-**Local Example:**
-```
-PORT=3000
-MONGO_URI=mongodb://localhost:27017/rmit_database
-JWT_SECRET=my_secret_string
-CLIENT_URL=http://localhost:8080
-BASE_API_URL=api
-```
-
-**AWS EC2 Example (Single Instance Deployment):**
-```env
-PORT=3000
-MONGO_URI=mongodb://localhost:27017/rmit_database # Use localhost for same-machine DB connection
-JWT_SECRET=my_secret_string
-CLIENT_URL=http://<your-ec2-public-ip>:8080
-BASE_API_URL=api
-```
-> **💡 Important Note on `MONGO_URI`**: When your server and MongoDB are on the same EC2 instance, always use `localhost` (or `127.0.0.1`) for the `MONGO_URI`. This ensures a direct, secure, and fast internal connection. Using the public IP would force an unnecessary and often blocked external connection back to the same machine.
-
-**Important:** Replace `<your-ec2-public-ip>` with your actual EC2 instance's public IP address. The value `0.0.0.0` is a wildcard that means "listen on all available network interfaces," which is useful in environments like Docker or when you're unsure which IP will be assigned.
-
-## 🌐 Configuring Webpack Dev Server
-
-To ensure the webpack dev server is correctly configured for both local and EC2 deployments, update the `devServer` settings in `client/webpack/webpack.dev.js` as follows:
-
-**Local Deployment:**
-```javascript
-devServer: {
-  port: 8080,
-  host: 'localhost', // Listen on localhost network
-  ...
-}
-```
-
-**EC2 Deployment:**
-```javascript
-devServer: {
-  port: 8080,
-  host: '0.0.0.0', // Listen on all interface network
-  ...
-}
-```
-
-This configuration ensures that the webpack dev server listens on the appropriate network interface based on the deployment environment.
-
-
-The `client/` and `server/` directories are isolated, promoting independent development and deployment.
-
-## 🔐 Developer Notes
-
-- Ensure that MongoDB is running locally or that your MongoDB Atlas cluster is properly configured.
-- The client communicates with the server via the `/api` endpoint.
-- Make sure the `.env` files are properly set up for both the client and server.
-
-## 📸 Screenshots
-
-<p align="center">
-    <img src="setup_screenshots/website_hompage.png" width=900>
-</p>
-<p align="center">
-    <img src="setup_screenshots/website_signup_page.png" width=900>
-</p>
-<p align="center">
-    <img src="setup_screenshots/website_store_page.png" width=900>
-</p>
-<p align="center">
-    <img src="setup_screenshots/website_user_profile_dashboard.png" width=900>
-</p>
-<p align="center">
-    <img src="setup_screenshots/website_admin_products_page.png" width=900>
-</p>
-<p align="center">
-    <img src="setup_screenshots/website_order_page.png" width=900>
-</p>
-
-## 🏆 Author
-- Tom Huynh - tomhuynhsg@gmail.com
