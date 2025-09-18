@@ -1,0 +1,49 @@
+#############################################
+# RMIT University Vietnam
+# Course: COSC2767|COSC2805 Systems Deployment and Operations
+# Semester: 2025B
+# Assessment: Assignment 2
+# Author: Bui Viet Anh
+# ID: s3988393
+# Created  date: 14/09/2025
+# Last modified: 18/09/2025
+# Acknowledgement: None
+#############################################
+
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: seed-db
+spec:
+  backoffLimit: 0
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+      - name: seed
+        image: __IMAGE__  # Jenkins will replace this with the built backend image
+        command: ["sh","-lc"]
+        # Read admin creds from a temporary Secret (created by Jenkins below)
+        args:
+          - >
+            npm run seed:db -- "${SEED_ADMIN_EMAIL}" "${SEED_ADMIN_PASSWORD}"
+        env:
+        - name: PORT
+          value: "3000"
+        - name: BASE_API_URL
+          value: "api"
+        - name: MONGO_URI
+          valueFrom:
+            secretKeyRef:
+              name: app-secrets
+              key: MONGO_URI
+        - name: SEED_ADMIN_EMAIL
+          valueFrom:
+            secretKeyRef:
+              name: seed-admin
+              key: email
+        - name: SEED_ADMIN_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: seed-admin
+              key: password

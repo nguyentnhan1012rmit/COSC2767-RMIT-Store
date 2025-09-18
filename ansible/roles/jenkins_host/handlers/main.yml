@@ -1,0 +1,20 @@
+#############################################
+# RMIT University Vietnam
+# Course: COSC2767|COSC2805 Systems Deployment and Operations
+# Semester: 2025B
+# Assessment: Assignment 2
+# Author: Bui Viet Anh
+# ID: s3988393
+# Created  date: 14/09/2025
+# Last modified: 18/09/2025
+# Acknowledgement: None
+#############################################
+
+---
+- name: daemon-reload
+  ansible.builtin.command: systemctl daemon-reload
+
+- name: restart jenkins
+  ansible.builtin.service:
+    name: jenkins
+    state: restarted

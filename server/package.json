@@ -5,7 +5,8 @@
   "scripts": {
     "dev": "nodemon",
     "start": "cross-env NODE_ENV=production node index.js",
-    "seed:db": "node utils/seed.js"
+    "seed:db": "node utils/seed.js",
+    "test": "npx jest --runInBand"
   },
   "dependencies": {
     "@faker-js/faker": "^9.9.0",
@@ -34,6 +35,12 @@
   "devDependencies": {
     "chalk": "^2.4.2",
     "cross-env": "^5.2.1",
-    "nodemon": "^1.19.1"
+    "ip": "^2.0.1",
+    "jest": "^30.1.3",
+    "jest-junit": "^16.0.0",
+    "mongodb-memory-server": "^10.2.0",
+    "nodemon": "^1.19.1",
+    "socks": "^2.8.7",
+    "supertest": "^7.1.4"
   }
 }

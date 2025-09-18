@@ -1,0 +1,24 @@
+#############################################
+# RMIT University Vietnam
+# Course: COSC2767|COSC2805 Systems Deployment and Operations
+# Semester: 2025B
+# Assessment: Assignment 2
+# Author: Bui Viet Anh
+# ID: s3988393
+# Created  date: 14/09/2025
+# Last modified: 18/09/2025
+# Acknowledgement: None
+#############################################
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend-svc
+  namespace: prod
+  labels: { app: frontend }
+spec:
+  type: ClusterIP
+  selector: { app: frontend, version: blue }
+  ports:
+  - port: 8080
+    targetPort: 8080

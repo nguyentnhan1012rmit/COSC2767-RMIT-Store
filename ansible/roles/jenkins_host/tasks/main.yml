@@ -1,0 +1,297 @@
+#############################################
+# RMIT University Vietnam
+# Course: COSC2767|COSC2805 Systems Deployment and Operations
+# Semester: 2025B
+# Assessment: Assignment 2
+# Author: Bui Viet Anh
+# ID: s3988393
+# Created  date: 14/09/2025
+# Last modified: 18/09/2025
+# Acknowledgement: None
+#############################################
+
+---
+- name: Set hostname
+  ansible.builtin.hostname: { name: jenkins }
+
+- name: Set OS timezone (no plugin required)
+  ansible.builtin.command: timedatectl set-timezone "Asia/Ho_Chi_Minh"
+  changed_when: false
+
+- name: Ensure /etc/fstab has tmpfs for /tmp
+  ansible.builtin.lineinfile:
+    path: /etc/fstab
+    regexp: '^tmpfs\s+/tmp\s+tmpfs\s+'
+    line: 'tmpfs   /tmp    tmpfs   defaults,size=3G   0   0'
+    state: present
+
+- name: Remount /tmp to apply tmpfs
+  ansible.builtin.command: mount -o remount /tmp
+  register: remount_tmp
+  failed_when: false
+  changed_when: remount_tmp.rc == 0
+
+- name: Ensure base packages
+  ansible.builtin.package:
+    name: [git, java-17-amazon-corretto, docker]
+    state: present
+
+- name: Enable and start Docker
+  ansible.builtin.service: { name: docker, enabled: true, state: started }
+
+- name: Ensure Jenkins repo file is present
+  ansible.builtin.get_url:
+    url: https://pkg.jenkins.io/redhat-stable/jenkins.repo
+    dest: /etc/yum.repos.d/jenkins.repo
+    mode: '0644'
+
+- name: Import Jenkins RPM key
+  ansible.builtin.rpm_key:
+    state: present
+    key: https://pkg.jenkins.io/redhat-stable/jenkins.io-2023.key
+
+- name: Install Jenkins
+  ansible.builtin.package: { name: jenkins, state: present }
+
+- name: Enable and start Jenkins
+  ansible.builtin.service: { name: jenkins, enabled: true, state: started }
+
+- name: Add users to docker group
+  ansible.builtin.user:
+    name: "{{ item }}"
+    groups: docker
+    append: true
+  loop: [ec2-user, jenkins]
+
+- name: Install kubectl
+  ansible.builtin.get_url:
+    url: https://s3.us-west-2.amazonaws.com/amazon-eks/1.33.3/2025-08-03/bin/linux/amd64/kubectl
+    dest: /usr/local/bin/kubectl
+    mode: '0755'
+    owner: root
+    group: root
+
+- name: Install eksctl
+  ansible.builtin.unarchive:
+    src: https://github.com/weaveworks/eksctl/releases/latest/download/eksctl_{{ ansible_system }}_amd64.tar.gz
+    dest: /usr/local/bin
+    remote_src: true
+    mode: '0755'
+
+- name: Install yq
+  ansible.builtin.get_url:
+    url: https://github.com/mikefarah/yq/releases/download/v4.44.3/yq_linux_amd64
+    dest: /usr/local/bin/yq
+    mode: '0755'
+
+- name: Install helm (script)
+  ansible.builtin.shell: |
+    set -euo pipefail
+    curl -sSfL https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+  args: { executable: /bin/bash }
+
+- name: Ensure helm binary is executable for all users
+  ansible.builtin.file:
+    path: /usr/local/bin/helm
+    owner: root
+    group: root
+    mode: '0755'
+
+- name: Setup NodeSource repo
+  ansible.builtin.shell: |
+    set -euo pipefail
+    curl -fsSL https://rpm.nodesource.com/setup_22.x | bash -
+  args: { executable: /bin/bash }
+
+- name: Install nodejs
+  ansible.builtin.package: { name: nodejs, state: present }
+
+- name: Create systemd override directory
+  ansible.builtin.file:
+    path: /etc/systemd/system/jenkins.service.d
+    state: directory
+    mode: '0755'
+
+- name: Drop jenkins override for PATH
+  ansible.builtin.template:
+    src: jenkins_override.conf.j2
+    dest: /etc/systemd/system/jenkins.service.d/override.conf
+    mode: '0644'
+  notify: [ "daemon-reload", "restart jenkins" ]
+
+- name: Ensure /etc/jenkins exists for env file
+  ansible.builtin.file:
+    path: /etc/jenkins
+    state: directory
+    owner: root
+    group: root
+    mode: '0700'
+
+- name: Reference plugins list (optional)
+  ansible.builtin.copy:
+    dest: /var/lib/jenkins/plugins.txt
+    content: |
+      ansicolor
+      docker-workflow
+      workflow-aggregator
+      email-ext
+      mailer
+      configuration-as-code
+      ansible
+      git
+      github
+      credentials-binding
+      junit
+      timestamper
+      build-timeout
+      github-branch-source
+      docker-pipeline
+    owner: jenkins
+    group: jenkins
+    mode: '0644'
+
+- name: Create plugin manager directory
+  ansible.builtin.file:
+    path: /opt/jenkins-plugin-manager
+    state: directory
+    mode: '0755'
+
+- name: Download plugin-installation-manager tool jar
+  ansible.builtin.get_url:
+    url: https://github.com/jenkinsci/plugin-installation-manager-tool/releases/download/2.12.15/jenkins-plugin-manager-2.12.15.jar
+    dest: /opt/jenkins-plugin-manager/jenkins-plugin-manager.jar
+    mode: '0644'
+
+- name: Ensure Jenkins plugins directory exists
+  ansible.builtin.file:
+    path: /var/lib/jenkins/plugins
+    state: directory
+    owner: jenkins
+    group: jenkins
+    mode: '0755'
+
+# --- Plugins & JCasC (clean path-agnostic, version-aware) ---------------------
+
+# Single source of truth for plugins (valid IDs only)
+- name: Write plugins.txt (curated)
+  ansible.builtin.copy:
+    dest: /var/lib/jenkins/plugins.txt
+    content: |
+      ansicolor
+      configuration-as-code
+      workflow-aggregator
+      docker-workflow
+      git
+      github
+      github-branch-source
+      credentials-binding
+      junit
+      timestamper
+      email-ext
+      mailer
+      build-timeout
+      ansible
+    owner: jenkins
+    group: jenkins
+    mode: '0644'
+
+- name: Create plugin manager directory
+  ansible.builtin.file:
+    path: /opt/jenkins-plugin-manager
+    state: directory
+    mode: '0755'
+
+- name: Download plugin-installation-manager tool jar
+  ansible.builtin.get_url:
+    url: https://github.com/jenkinsci/plugin-installation-manager-tool/releases/download/2.12.15/jenkins-plugin-manager-2.12.15.jar
+    dest: /opt/jenkins-plugin-manager/jenkins-plugin-manager.jar
+    mode: '0644'
+
+- name: Ensure Jenkins plugins directory exists
+  ansible.builtin.file:
+    path: /var/lib/jenkins/plugins
+    state: directory
+    owner: jenkins
+    group: jenkins
+    mode: '0755'
+
+# ✅ Get the installed Jenkins version without relying on war file paths
+- name: Get Jenkins version from RPM
+  ansible.builtin.command: rpm -q --qf '%{VERSION}\n' jenkins
+  register: jenkins_version
+  changed_when: false
+
+# Install JCasC first so the next restart can load YAML
+- name: Install JCasC plugin first
+  become: true
+  become_user: jenkins
+  ansible.builtin.command: >
+    /usr/bin/java -jar /opt/jenkins-plugin-manager/jenkins-plugin-manager.jar
+    --jenkins-version {{ jenkins_version.stdout | trim }}
+    --plugin-download-directory /var/lib/jenkins/plugins
+    --plugins configuration-as-code
+  args:
+    creates: /var/lib/jenkins/plugins/configuration-as-code.jpi
+  register: pim_jcasc
+  retries: 3
+  delay: 10
+  until: pim_jcasc.rc == 0
+  notify: ["restart jenkins"]
+
+# Install the rest of the plugins
+- name: Install remaining plugins from plugins.txt
+  become: true
+  become_user: jenkins
+  ansible.builtin.command: >
+    /usr/bin/java -jar /opt/jenkins-plugin-manager/jenkins-plugin-manager.jar
+    --jenkins-version {{ jenkins_version.stdout | trim }}
+    --plugin-file /var/lib/jenkins/plugins.txt
+    --plugin-download-directory /var/lib/jenkins/plugins
+  register: pim_bulk
+  retries: 3
+  delay: 10
+  until: pim_bulk.rc == 0
+
+- name: Ensure plugin files owned by jenkins
+  ansible.builtin.file:
+    path: /var/lib/jenkins/plugins
+    owner: jenkins
+    group: jenkins
+    recurse: true
+    state: directory
+
+# --- JCasC file placement (keep as-is if you already have it) ----------------
+- name: Ensure JCasC config directory
+  ansible.builtin.file:
+    path: /var/lib/jenkins/casc_configs
+    state: directory
+    owner: jenkins
+    group: jenkins
+    mode: '0755'
+
+- name: Deploy JCasC file
+  ansible.builtin.copy:
+    src: casc_configs/jenkins.yaml
+    dest: /var/lib/jenkins/casc_configs/jenkins.yaml
+    owner: jenkins
+    group: jenkins
+    mode: '0644'
+  notify: ["restart jenkins"]
+
+# JCasC deployment
+- name: Ensure JCasC config directory
+  ansible.builtin.file:
+    path: /var/lib/jenkins/casc_configs
+    state: directory
+    owner: jenkins
+    group: jenkins
+    mode: '0755'
+
+- name: Deploy JCasC file
+  ansible.builtin.copy:
+    src: casc_configs/jenkins.yaml
+    dest: /var/lib/jenkins/casc_configs/jenkins.yaml
+    owner: jenkins
+    group: jenkins
+    mode: '0644'
+  notify: [ "restart jenkins" ]

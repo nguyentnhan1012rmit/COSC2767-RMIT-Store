@@ -1,0 +1,29 @@
+#############################################
+# RMIT University Vietnam
+# Course: COSC2767|COSC2805 Systems Deployment and Operations
+# Semester: 2025B
+# Assessment: Assignment 2
+# Author: Bui Viet Anh
+# ID: s3988393
+# Created  date: 14/09/2025
+# Last modified: 18/09/2025
+# Acknowledgement: None
+#############################################
+
+[Service]
+Environment="PATH=/usr/local/bin:/usr/bin:/bin"
+Environment="CASC_JENKINS_CONFIG=/var/lib/jenkins/casc_configs/jenkins.yaml"
+
+# Optionally define secrets here (or set via 'systemctl edit jenkins' later). Example:
+Environment="JENKINS_ADMIN_ID=admin"
+Environment="JENKINS_ADMIN_PW=admin"
+Environment="JENKINS_URL={{ jenkins_url | default('http://localhost:8080/') }}"
+Environment="JENKINS_ADMIN_EMAIL=Jenkins CI <nhandtrai@gmail.com>"
+Environment="SEED_ADMIN_EMAIL=admin@rmit.edu.vn"
+Environment="SEED_ADMIN_PASSWORD=mypassword"
+Environment="GITHUB_USER=nguyentnhan1012rmit"
+Environment="DEFAULT_RECIPIENTS=nhandtrai@gmail.com"
+Environment="MONGODB_PRIVATE_IP={{ mongodb_private_ip | default('') }}"
+Environment="MONGODB_INSTANCE_ID={{ mongodb_instance_id | default('') }}"
+EnvironmentFile=-/etc/jenkins/jenkins.env
+Environment="JENKINS_JAVA_OPTIONS=-Djava.awt.headless=true -Djenkins.install.runSetupWizard=false -Duser.timezone=Asia/Ho_Chi_Minh"

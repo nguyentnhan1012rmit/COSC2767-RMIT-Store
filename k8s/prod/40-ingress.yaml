@@ -1,0 +1,29 @@
+#############################################
+# RMIT University Vietnam
+# Course: COSC2767|COSC2805 Systems Deployment and Operations
+# Semester: 2025B
+# Assessment: Assignment 2
+# Author: Bui Viet Anh
+# ID: s3988393
+# Created  date: 14/09/2025
+# Last modified: 18/09/2025
+# Acknowledgement: None
+#############################################
+
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: app-ingress
+  namespace: prod
+spec:
+  ingressClassName: nginx
+  rules:
+  - host: prod-host
+    http:
+      paths:
+      - path: /api
+        pathType: Prefix
+        backend: { service: { name: backend-svc,  port: { number: 3000 } } }
+      - path: /
+        pathType: Prefix
+        backend: { service: { name: frontend-svc, port: { number: 8080 } } }

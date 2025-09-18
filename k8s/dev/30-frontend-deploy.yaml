@@ -1,0 +1,38 @@
+#############################################
+# RMIT University Vietnam
+# Course: COSC2767|COSC2805 Systems Deployment and Operations
+# Semester: 2025B
+# Assessment: Assignment 2
+# Author: Bui Viet Anh
+# ID: s3988393
+# Created  date: 14/09/2025
+# Last modified: 18/09/2025
+# Acknowledgement: None
+#############################################
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend
+  namespace: dev
+  labels: { app: frontend, version: blue }
+spec:
+  replicas: 1
+  selector: { matchLabels: { app: frontend, version: blue } }
+  template:
+    metadata:
+      labels: { app: frontend, version: blue }
+    spec:
+      containers:
+      - name: frontend
+        image: __IMAGE__ # will be updated by Jenkins 'set image'
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 8080   # webpack-dev-server
+        env:
+        - name: API_URL
+          valueFrom: { configMapKeyRef: { name: app-config, key: API_URL } }
+        - name: HOST
+          value: "0.0.0.0"
+        - name: PORT
+          value: "8080"
